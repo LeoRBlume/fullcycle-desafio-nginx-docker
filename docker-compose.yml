@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  app: 
+    build: 
+      context: ./node
+    container_name: app
+    networks:
+      - node-network
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+      image: mysql:8.0
+      container_name: db
+      command: --default-authentication-plugin=mysql_native_password
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: nodedb
+      networks:
+        - node-network
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$${MYSQL_ROOT_PASSWORD}"]
+        interval: 5s
+        timeout: 10s
+        retries: 3
+
+  nginx:
+      build: 
+        context: ./nginx
+      ports:
+        - "8080:80"
+      networks:
+        - node-network
+      depends_on:
+        - app
+
+networks:
+    node-network:
+      driver: bridge
